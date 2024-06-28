@@ -1,0 +1,65 @@
+
+name: Push
+
+on:
+  push:
+    branches:
+      - vm
+
+permissions:
+      id-token: write
+      contents: read
+jobs: 
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    # Checkout the repository
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    # Install the latest version
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      
+    # Log into Azure
+    - name: 'Az CLI login'
+      uses: azure/login@v1
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    # Test Login
+    - name: 'Run az commands'
+      run: |
+        az account show
+
+    # Terraform init
+    - name: Terraform Init
+      working-directory: ./terraform
+      id: init
+      env:
+        ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      run: terraform init
+
+   # Terraform plan
+    - name: Terraform Plan
+      working-directory: ./terraform
+      id: plan
+      env:
+        ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      run: terraform plan
+
+    # Terraform apply
+    - name: Terraform apply
+      working-directory: ./terraform
+      id: apply
+      env:
+        ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      run: terraform apply -auto-approve
